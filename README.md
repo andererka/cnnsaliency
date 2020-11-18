@@ -1,2 +1,2 @@
 # nnsaliency
-including saliency maps fro neural prediction
+including saliency maps for neural prediction
