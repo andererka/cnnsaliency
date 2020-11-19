@@ -25,5 +25,4 @@ secrets/
 .env/
 .env_example
 .env_pipeline
-lib/
-lib
+/lib/
