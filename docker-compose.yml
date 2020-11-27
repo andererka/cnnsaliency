@@ -1,0 +1,79 @@
+version: '3.4'
+x-build: &build
+  context: .
+  dockerfile: Dockerfile
+
+x-shared: &common
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      - GITHUB_USER=${GITHUB_USER}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DEV_SOURCE=${DEV_SOURCE}
+  volumes:
+    - .:/src/nnsaliency
+    - ./notebooks:/notebooks
+
+  env_file:
+    - .env
+
+services:
+  notebook_server:
+    <<: *common
+    volumes:
+      - .:/src/nnsaliency
+      - ./notebooks:/notebooks
+      - /home:/server_home
+      - /var/sinz-shared:/data
+    ports:
+      - "8888:8888"
+
+  notebook_gpu_server:
+    <<: *common
+    volumes:
+      - .:/src/nnsaliency
+      - ./notebooks:/notebooks
+      - /var/lib/nova/sinz-shared:/data
+    ports:
+      - "8888:8888"
+
+  notebook_bcm:
+    <<: *common
+    ports:
+      - "8888:8888"
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile_pipeline
+    env_file:
+      - .env_pipeline
+    volumes:
+      - ./notebooks:/notebooks
+
+    ports:
+      - "8888:8888"
+    entrypoint:
+      - jupyter
+      - lab
+      - --ip=0.0.0.0
+      - --allow-root
+      - --NotebookApp.token=''
+      - --no-browser
+
+  nexport:
+    <<: *common
+    ports:
+      - "8888:8888"
+    env_file:
+      - .env_pipeline
+    volumes:
+      - ./notebooks:/notebooks
+    entrypoint:
+      - jupyter
+      - lab
+      - --ip=0.0.0.0
+      - --allow-root
+      - --NotebookApp.token=''
+      - --no-browser
