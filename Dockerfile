@@ -37,5 +37,3 @@ RUN pip install -e /src/neuralpredictors &&\
     pip install -e /src/pysaliency &&\
     pip install -U Jinja2
 
-
-
