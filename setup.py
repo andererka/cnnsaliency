@@ -5,11 +5,11 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 setup(
-    name='nnvision',
+    name='nnsaliency',
     version='0.1',
-    description='Envisioning the biological visual system with DNN',
-    author='Konstantin Willeke',
-    author_email='konstantin.willeke@gmail.com',
+    description='',
+    author='Katharina Anderer',
+    author_email='k.anderer@t-online.de',
     packages=find_packages(exclude=[]),
     install_requires=[],
 )
