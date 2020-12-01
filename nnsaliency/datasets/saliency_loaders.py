@@ -37,7 +37,8 @@ def monkey_saliency_loader(dataset,
                            store_data_info=True,
                            image_frac=1.,
                            image_selection_seed=None,
-                           randomize_image_selection=True):
+                           randomize_image_selection=True,
+                           logarithm = True):
     """
     Function that returns cached dataloaders for monkey ephys experiments.
 
@@ -111,12 +112,12 @@ def monkey_saliency_loader(dataset,
 
         # Initialize cache
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True)
+                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=True)
 
     else:  # if stats not given
         # Initialize cache with no normalization
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, transform=True, normalize=False)
+                           scale=scale, transform=True, normalize=False, logarithm=True)
 
         # Compute mean and std of transformed images and zscore data (the cache wil be filled so first epoch will be fast)
         cache.zscore_images(update_stats=True)
@@ -234,7 +235,7 @@ class ImageCache:
     """
 
     def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,
-                 transform=True, normalize=True, filename_precision=6):
+                 transform=True, normalize=True, filename_precision=6, logarithm = True):
 
         """
         path: str - pointing to the directory, where the individual .npy files are present
@@ -260,6 +261,7 @@ class ImageCache:
         self.transform = transform
         self.normalize = normalize
         self.leading_zeros = filename_precision
+        self.logarithm = logarithm
 
     def __len__(self):
         return len([file for file in os.listdir(self.path) if file.endswith('.npy')])
@@ -285,6 +287,9 @@ class ImageCache:
             # if self.sal_path != None:
             filename_sal = os.path.join(self.sal_path, str(key).zfill(self.leading_zeros) + '.npy')
             sal_map = np.load(filename_sal)
+            if (self.logarithm==False):
+                sal_map = np.exp(sal_map)
+
             sal_map = self.transform_image(sal_map) if self.transform else sal_map
             sal_map = self.normalize_image(sal_map) if self.normalize else sal_map
             sal_map = torch.tensor(sal_map).to(torch.float)
