@@ -19,6 +19,8 @@ from .utility import get_validation_split, get_cached_loader, get_fraction_of_tr
 from nnfabrik.utility.nn_helpers import get_module_output, set_random_seed, get_dims_for_loader_dict
 from nnfabrik.utility.dj_helpers import make_hash
 from skimage.transform import rescale
+import cv2
+from scipy import ndimage
 
 def monkey_saliency_loader(dataset,
                            neuronal_data_files,
@@ -38,7 +40,8 @@ def monkey_saliency_loader(dataset,
                            image_frac=1.,
                            image_selection_seed=None,
                            randomize_image_selection=True,
-                           logarithm = True):
+                           logarithm = True,
+                           gradient = False):
     """
     Function that returns cached dataloaders for monkey ephys experiments.
 
@@ -100,6 +103,7 @@ def monkey_saliency_loader(dataset,
     stats_filename = make_hash(dataset_config)
 
     stats_path = os.path.join(image_cache_path, 'statistics/', stats_filename)
+    stats_path2 = os.path.join(saliency_cache_path, 'statistics/', stats_filename)
 
     # Get mean and std
     if os.path.exists(stats_path):
@@ -110,19 +114,32 @@ def monkey_saliency_loader(dataset,
         img_mean = list(data_info.values())[0]["img_mean"]
         img_std = list(data_info.values())[0]["img_std"]
 
+    if os.path.exists(stats_path2):
+        with open(stats_path2, "rb") as pkl:
+            data_info = pickle.load(pkl)
+        if return_data_info:
+            return data_info
+        maps_mean = list(data_info.values())[0]["maps_mean"]
+        maps_std = list(data_info.values())[0]["maps_std"]
+
+        print("path exists")
+
         # Initialize cache
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=True)
+                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=logarithm, gradient=gradient)
 
     else:  # if stats not given
         # Initialize cache with no normalization
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, transform=True, normalize=False, logarithm=True)
+                           scale=scale, transform=True, normalize=False, logarithm=logarithm, gradient=gradient)
 
         # Compute mean and std of transformed images and zscore data (the cache wil be filled so first epoch will be fast)
+        print("zscore")
         cache.zscore_images(update_stats=True)
         img_mean = cache.img_mean
         img_std = cache.img_std
+
+
 
     n_images = len(cache)
     data_info = {}
@@ -234,8 +251,8 @@ class ImageCache:
     Images need to be present as 2D .npy arrays
     """
 
-    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,
-                 transform=True, normalize=True, filename_precision=6, logarithm = True):
+    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,maps_mean = None, maps_std = None,
+                 transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False):
 
         """
         path: str - pointing to the directory, where the individual .npy files are present
@@ -246,7 +263,7 @@ class ImageCache:
         img_mean: - mean luminance across all images
         img_std: - std of the luminance across all images
         transform: - whether to apply a transformation to an image
-        normalize: - whether to standarized inputs by the mean and variance
+        normalize: - whether to standardized inputs by the mean and variance
         filename_precision: - amount leading zeros of the files in the specified folder
         """
 
@@ -258,10 +275,15 @@ class ImageCache:
         self.scale = scale
         self.img_mean = img_mean
         self.img_std = img_std
+
+        self.maps_mean = maps_mean
+        self.maps_std = maps_std
+
         self.transform = transform
         self.normalize = normalize
         self.leading_zeros = filename_precision
         self.logarithm = logarithm
+        self.gradient = gradient
 
     def __len__(self):
         return len([file for file in os.listdir(self.path) if file.endswith('.npy')])
@@ -284,21 +306,44 @@ class ImageCache:
             image = self.normalize_image(image) if self.normalize else image
             image = torch.tensor(image).to(torch.float)
 
-            # if self.sal_path != None:
             filename_sal = os.path.join(self.sal_path, str(key).zfill(self.leading_zeros) + '.npy')
             sal_map = np.load(filename_sal)
+
             if (self.logarithm==False):
                 sal_map = np.exp(sal_map)
 
             sal_map = self.transform_image(sal_map) if self.transform else sal_map
-            sal_map = self.normalize_image(sal_map) if self.normalize else sal_map
-            sal_map = torch.tensor(sal_map).to(torch.float)
 
-            image_concat = torch.cat((image, sal_map), 0)
-            image = image_concat
-            self.cache[key] = image
+            sal_map = self.normalize_maps(sal_map) if self.normalize else sal_map
 
-            return image
+            if (self.gradient==True):
+                sal_map = sal_map.reshape((67, 67))
+
+                sx = ndimage.sobel(sal_map, axis=0, mode='constant')
+                # Get y-gradient in "sy"
+                sy = ndimage.sobel(sal_map, axis=1, mode='constant')
+
+                sx = sx.reshape((1, 67, 67))
+                sy = sy.reshape((1, 67, 67))
+
+                sobelx = torch.tensor(sx).to(torch.float)
+                sobely = torch.tensor(sy).to(torch.float)
+
+
+                image_concat = torch.cat((image, sobelx, sobely), 0)
+                image = image_concat
+
+                self.cache[key] = image
+
+                return image
+            else:
+                sal_map = torch.tensor(sal_map).to(torch.float)
+
+                image_concat = torch.cat((image, sal_map, sal_map), 0)
+                image = image_concat
+
+                self.cache[key] = image
+
 
     def transform_image(self, image):
         """
@@ -338,6 +383,14 @@ class ImageCache:
         image = (image - self.img_mean) / self.img_std
         return image
 
+    def normalize_maps(self, image):
+        """
+        standarizes maps
+        """
+        image = (image - self.maps_mean) / self.maps_std
+        return image
+
+
     @property
     def cache_size(self):
         return len(self.cache)
@@ -349,17 +402,60 @@ class ImageCache:
         images = torch.stack([self.update(item) for item in items])
         return images
 
+    @property
+    def loaded_maps(self):
+        print('Loading images ...')
+        items = [int(file.split('.')[0]) for file in os.listdir(self.sal_path) if file.endswith('.npy')]
+        images = torch.stack([self.update(item) for item in items])
+        return images
+
+
     def zscore_images(self, update_stats=True):
         """
         zscore images in cache
         """
         images = self.loaded_images
-        img_mean = images.mean()
-        img_std = images.std()
+
+
+        img_mean = images[:,0,:,:].mean()
+        img_std = images[:,0,:,:].std()
+
+        maps_mean = images[:,1,:,:].mean()
+        maps_std = images[:,1,:,:].std()
+
+
+        grad_mean = images[:,2,:,:].mean()
+        grad_std = images[:,2,:,:].std()
+
+
 
         for key in self.cache:
-            self.cache[key] = (self.cache[key] - img_mean) / img_std
+            self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
+            self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
+            self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
+
 
         if update_stats:
             self.img_mean = np.float32(img_mean.item())
             self.img_std = np.float32(img_std.item())
+
+            self.maps_mean = np.float32(maps_mean.item())
+            self.maps_std = np.float32(maps_std.item())
+
+            self.grad_mean = np.float32(grad_mean.item())
+            self.grad_std = np.float32(grad_std.item())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
