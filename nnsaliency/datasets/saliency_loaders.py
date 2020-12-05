@@ -41,7 +41,8 @@ def monkey_saliency_loader(dataset,
                            image_selection_seed=None,
                            randomize_image_selection=True,
                            logarithm = True,
-                           gradient = False):
+                           gradient = False,
+                           include_all = False):
     """
     Function that returns cached dataloaders for monkey ephys experiments.
 
@@ -122,19 +123,18 @@ def monkey_saliency_loader(dataset,
         maps_mean = list(data_info.values())[0]["maps_mean"]
         maps_std = list(data_info.values())[0]["maps_std"]
 
-        print("path exists")
 
         # Initialize cache
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=logarithm, gradient=gradient)
+                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=logarithm, gradient=gradient, include_all=include_all)
 
     else:  # if stats not given
         # Initialize cache with no normalization
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, transform=True, normalize=False, logarithm=logarithm, gradient=gradient)
+                           scale=scale, transform=True, normalize=False, logarithm=logarithm, gradient=gradient, include_all= include_all)
 
         # Compute mean and std of transformed images and zscore data (the cache wil be filled so first epoch will be fast)
-        print("zscore")
+
         cache.zscore_images(update_stats=True)
         img_mean = cache.img_mean
         img_std = cache.img_std
@@ -252,7 +252,7 @@ class ImageCache:
     """
 
     def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,maps_mean = None, maps_std = None,
-                 transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False):
+                 transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False, include_all = False):
 
         """
         path: str - pointing to the directory, where the individual .npy files are present
@@ -284,6 +284,7 @@ class ImageCache:
         self.leading_zeros = filename_precision
         self.logarithm = logarithm
         self.gradient = gradient
+        self.include_all = include_all
 
     def __len__(self):
         return len([file for file in os.listdir(self.path) if file.endswith('.npy')])
@@ -317,20 +318,23 @@ class ImageCache:
             sal_map = self.normalize_maps(sal_map) if self.normalize else sal_map
 
             if (self.gradient==True):
-                sal_map = sal_map.reshape((67, 67))
+                sal_map = sal_map.reshape((sal_map.shape[1], sal_map.shape[2]))
 
                 sx = ndimage.sobel(sal_map, axis=0, mode='constant')
                 # Get y-gradient in "sy"
                 sy = ndimage.sobel(sal_map, axis=1, mode='constant')
 
-                sx = sx.reshape((1, 67, 67))
-                sy = sy.reshape((1, 67, 67))
+                sx = sx.reshape((1, sx.shape[0], sx.shape[1]))
+                sy = sy.reshape((1, sy.shape[0], sy.shape[1]))
 
                 sobelx = torch.tensor(sx).to(torch.float)
                 sobely = torch.tensor(sy).to(torch.float)
 
-
-                image_concat = torch.cat((image, sobelx, sobely), 0)
+                if (self.include_all == True):
+                    sal_map = torch.tensor(sal_map).to(torch.float)
+                    image_concat = torch.cat((image, sal_map, sobelx, sobely), 0)
+                else:
+                    image_concat = torch.cat((image, sobelx, sobely), 0)
                 image = image_concat
 
                 self.cache[key] = image
@@ -343,6 +347,8 @@ class ImageCache:
                 image = image_concat
 
                 self.cache[key] = image
+
+                return image
 
 
     def transform_image(self, image):
@@ -416,24 +422,42 @@ class ImageCache:
         """
         images = self.loaded_images
 
+        if (images.shape[1] == 3):
+            img_mean = images[:,0,:,:].mean()
+            img_std = images[:,0,:,:].std()
 
-        img_mean = images[:,0,:,:].mean()
-        img_std = images[:,0,:,:].std()
-
-        maps_mean = images[:,1,:,:].mean()
-        maps_std = images[:,1,:,:].std()
-
-
-        grad_mean = images[:,2,:,:].mean()
-        grad_std = images[:,2,:,:].std()
+            maps_mean = images[:,1,:,:].mean()
+            maps_std = images[:,1,:,:].std()
 
 
+            grad_mean = images[:,2,:,:].mean()
+            grad_std = images[:,2,:,:].std()
 
-        for key in self.cache:
-            self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
-            self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
-            self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
 
+            for key in self.cache:
+                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
+                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
+                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
+
+        if (images.shape[1] == 4):
+
+            img_mean = images[:, 0, :, :].mean()
+            img_std = images[:, 0, :, :].std()
+
+            maps_mean = images[:, 1, :, :].mean()
+            maps_std = images[:, 1, :, :].std()
+
+            grad_mean = images[:, 2, :, :].mean()
+            grad_std = images[:, 2, :, :].std()
+
+            grad2_mean = images[:, 2, :, :].mean()
+            grad2_std = images[:, 2, :, :].std()
+
+            for key in self.cache:
+                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
+                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
+                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
+                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad2_mean) / grad2_std
 
         if update_stats:
             self.img_mean = np.float32(img_mean.item())
@@ -444,6 +468,10 @@ class ImageCache:
 
             self.grad_mean = np.float32(grad_mean.item())
             self.grad_std = np.float32(grad_std.item())
+
+            if (images.shape[1] == 4):
+                self.grad2_mean = np.float32(grad2_mean.item())
+                self.grad2_std = np.float32(grad2_std.item())
 
 
 

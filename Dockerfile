@@ -30,7 +30,7 @@ RUN pip install -e /src/neuralpredictors &&\
     pip install -e /src/nnsaliency &&\
     pip install -e /src/nnsaliency/lib/nnvision &&\
     pip install -e /src/nnsaliency/lib/deepgaze_pytorch &&\
-    pip install cornet &&\
+    pip install git+https://github.com/dicarlolab/CORnet &&\
     pip install glom &&\
     pip install Cython &&\
     pip3 install git+https://github.com/sacadena/ptrnets &&\
