@@ -318,23 +318,30 @@ class ImageCache:
             sal_map = self.normalize_maps(sal_map) if self.normalize else sal_map
 
             if (self.gradient==True):
-                sal_map = sal_map.reshape((sal_map.shape[1], sal_map.shape[2]))
+                sal_map1 = sal_map.reshape((sal_map.shape[1], sal_map.shape[2]))
 
-                sx = ndimage.sobel(sal_map, axis=0, mode='constant')
+
+                image_first_derivative = ndimage.gaussian_filter(sal_map1, sigma=(5))
+
+
+                sx = ndimage.sobel(image_first_derivative, axis=0, mode='nearest')
                 # Get y-gradient in "sy"
-                sy = ndimage.sobel(sal_map, axis=1, mode='constant')
+                sy = ndimage.sobel(image_first_derivative, axis=1, mode='nearest')
 
                 sx = sx.reshape((1, sx.shape[0], sx.shape[1]))
                 sy = sy.reshape((1, sy.shape[0], sy.shape[1]))
 
-                sobelx = torch.tensor(sx).to(torch.float)
-                sobely = torch.tensor(sy).to(torch.float)
+
+
+                sx = torch.tensor(sx).to(torch.float)
+                sy = torch.tensor(sy).to(torch.float)
+
 
                 if (self.include_all == True):
                     sal_map = torch.tensor(sal_map).to(torch.float)
-                    image_concat = torch.cat((image, sal_map, sobelx, sobely), 0)
+                    image_concat = torch.cat((image, sal_map, sx, sy), 0)
                 else:
-                    image_concat = torch.cat((image, sobelx, sobely), 0)
+                    image_concat = torch.cat((image, sx, sy), 0)
                 image = image_concat
 
                 self.cache[key] = image

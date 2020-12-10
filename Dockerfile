@@ -11,7 +11,7 @@ WORKDIR /src
 # Use git credential-store to specify username and pass to use for pulling repo
 RUN git config --global credential.helper store &&\
     echo https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com >> ~/.git-credentials
-RUN git clone -b readout_position_regularizer https://github.com/KonstantinWilleke/neuralpredictors &&\
+RUN git clone -b attention_readout https://github.com/KonstantinWilleke/neuralpredictors &&\
     git clone https://github.com/sinzlab/nnfabrik &&\
     git clone -b konsti_monkey_experiments https://github.com/sinzlab/mei &&\
     git clone https://github.com/sinzlab/data_port &&\
