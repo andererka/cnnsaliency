@@ -138,7 +138,7 @@ def se_core_saliency_shifted_readout(dataloaders, seed, hidden_channels=32, inpu
                                    grid_mean_predictor=None, share_features=False, share_grid=False, data_info=None,
                                    attention_conv=False, shifter=None, shifter_type='MLP', input_channels_shifter=2,
                                    hidden_channels_shifter=5,
-                                   shift_layers=3, gamma_shifter=0, shifter_bias=True,
+                                   shift_layers=3, gamma_shifter=0, shifter_bias=True, use_saliency=True
                                    ):
     """
     Model class of a stacked2dCore (from neuralpredictors) and a Gaussian readout
@@ -247,6 +247,11 @@ def se_core_saliency_shifted_readout(dataloaders, seed, hidden_channels=32, inpu
 
             ### give saliency maps to shifter
             sal = x[:, 1:4, :, :]
+
+            ### option to test remapper without saliency input to validate if it's worth it:
+            if (use_saliency==False):
+                sal_shape = x[:, 1:4, :, :].shape
+                sal = torch.ones(sal_shape).cuda()
 
             sample = kwargs["sample"] if 'sample' in kwargs else None
 
