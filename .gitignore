@@ -23,6 +23,6 @@ secrets/
 .env*
 *.env
 .env/
-/lib/
-/lib
+nnsaliency/lib/
+nnsaliency/lib
 lib/
