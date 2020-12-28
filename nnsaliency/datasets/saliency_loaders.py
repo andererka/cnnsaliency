@@ -251,7 +251,8 @@ class ImageCache:
     Images need to be present as 2D .npy arrays
     """
 
-    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,maps_mean = None, maps_std = None,
+    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None, maps_mean = None, maps_std = None, grad_mean = None, grad_std = None, grad2_mean = None,
+                 grad2_std = None,
                  transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False, include_all = False):
 
         """
@@ -278,6 +279,12 @@ class ImageCache:
 
         self.maps_mean = maps_mean
         self.maps_std = maps_std
+
+        self.grad_mean = grad_mean
+        self.grad_std = grad_std
+
+        self.grad2_mean = grad2_mean
+        self.grad2_std = grad2_std
 
         self.transform = transform
         self.normalize = normalize
@@ -429,56 +436,31 @@ class ImageCache:
         """
         images = self.loaded_images
 
-        if (images.shape[1] == 3):
-            img_mean = images[:,0,:,:].mean()
-            img_std = images[:,0,:,:].std()
-
-            maps_mean = images[:,1,:,:].mean()
-            maps_std = images[:,1,:,:].std()
-
-
-            grad_mean = images[:,2,:,:].mean()
-            grad_std = images[:,2,:,:].std()
+        for i in range(0, images.shape[1]):
+            img_mean = images[:,i,:,:].mean()
+            img_std = images[:,i,:,:].std()
 
 
             for key in self.cache:
-                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
-                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
+                self.cache[key][i, :, :] = (self.cache[key][i, :, :] - img_mean) / img_std
 
-        if (images.shape[1] == 4):
 
-            img_mean = images[:, 0, :, :].mean()
-            img_std = images[:, 0, :, :].std()
+            if update_stats:
+                if i == 0:
+                    self.img_mean = np.float32(img_mean.item())
+                    self.img_std = np.float32(img_std.item())
 
-            maps_mean = images[:, 1, :, :].mean()
-            maps_std = images[:, 1, :, :].std()
+                if i == 1:
+                    self.maps_mean = np.float32(img_mean.item())
+                    self.maps_std = np.float32(img_std.item())
 
-            grad_mean = images[:, 2, :, :].mean()
-            grad_std = images[:, 2, :, :].std()
+                if i == 2:
+                    self.grad_mean = np.float32(img_mean.item())
+                    self.grad_std = np.float32(img_std.item())
 
-            grad2_mean = images[:, 3, :, :].mean()
-            grad2_std = images[:, 3, :, :].std()
-
-            for key in self.cache:
-                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
-                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
-                self.cache[key][3, :, :] = (self.cache[key][3, :, :] - grad2_mean) / grad2_std
-
-        if update_stats:
-            self.img_mean = np.float32(img_mean.item())
-            self.img_std = np.float32(img_std.item())
-
-            self.maps_mean = np.float32(maps_mean.item())
-            self.maps_std = np.float32(maps_std.item())
-
-            self.grad_mean = np.float32(grad_mean.item())
-            self.grad_std = np.float32(grad_std.item())
-
-            if (images.shape[1] == 4):
-                self.grad2_mean = np.float32(grad2_mean.item())
-                self.grad2_std = np.float32(grad2_std.item())
+                if i == 3:
+                    self.grad2_mean = np.float32(img_mean.item())
+                    self.grad2_std = np.float32(img_std.item())
 
 
 
