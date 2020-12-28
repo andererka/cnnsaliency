@@ -457,14 +457,14 @@ class ImageCache:
             grad_mean = images[:, 2, :, :].mean()
             grad_std = images[:, 2, :, :].std()
 
-            grad2_mean = images[:, 2, :, :].mean()
-            grad2_std = images[:, 2, :, :].std()
+            grad2_mean = images[:, 3, :, :].mean()
+            grad2_std = images[:, 3, :, :].std()
 
             for key in self.cache:
                 self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
                 self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
                 self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad2_mean) / grad2_std
+                self.cache[key][3, :, :] = (self.cache[key][3, :, :] - grad2_mean) / grad2_std
 
         if update_stats:
             self.img_mean = np.float32(img_mean.item())
