@@ -42,8 +42,13 @@ def monkey_saliency_loader(dataset,
                            randomize_image_selection=True,
                            logarithm = True,
                            gradient = False,
-                           include_all = False):
+                           include_all = False,
+                           sigma = 5):
     """
+    newly added:
+    sigma: - argument for defining the width of the Gaussian for calculationg the spatial gradients of the saliency maps
+            - default set to 5
+
     Function that returns cached dataloaders for monkey ephys experiments.
 
      creates a nested dictionary of dataloaders in the format
@@ -126,12 +131,12 @@ def monkey_saliency_loader(dataset,
 
         # Initialize cache
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=logarithm, gradient=gradient, include_all=include_all)
+                           scale=scale, img_mean=img_mean, img_std=img_std, transform=True, normalize=True, logarithm=logarithm, gradient=gradient, include_all=include_all, sigma=sigma)
 
     else:  # if stats not given
         # Initialize cache with no normalization
         cache = ImageCache(path=image_cache_path, sal_path=saliency_cache_path, subsample=subsample, crop=crop,
-                           scale=scale, transform=True, normalize=False, logarithm=logarithm, gradient=gradient, include_all= include_all)
+                           scale=scale, transform=True, normalize=False, logarithm=logarithm, gradient=gradient, include_all= include_all, sigma=sigma)
 
         # Compute mean and std of transformed images and zscore data (the cache wil be filled so first epoch will be fast)
 
@@ -251,8 +256,9 @@ class ImageCache:
     Images need to be present as 2D .npy arrays
     """
 
-    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None,maps_mean = None, maps_std = None,
-                 transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False, include_all = False):
+    def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None, maps_mean = None, maps_std = None, grad_mean = None, grad_std = None, grad2_mean = None,
+                 grad2_std = None,
+                 transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False, include_all = False, sigma= 5):
 
         """
         path: str - pointing to the directory, where the individual .npy files are present
@@ -279,12 +285,20 @@ class ImageCache:
         self.maps_mean = maps_mean
         self.maps_std = maps_std
 
+        self.grad_mean = grad_mean
+        self.grad_std = grad_std
+
+        self.grad2_mean = grad2_mean
+        self.grad2_std = grad2_std
+
         self.transform = transform
         self.normalize = normalize
         self.leading_zeros = filename_precision
         self.logarithm = logarithm
         self.gradient = gradient
         self.include_all = include_all
+
+        self.sigma = sigma
 
     def __len__(self):
         return len([file for file in os.listdir(self.path) if file.endswith('.npy')])
@@ -321,7 +335,7 @@ class ImageCache:
                 sal_map1 = sal_map.reshape((sal_map.shape[1], sal_map.shape[2]))
 
 
-                image_first_derivative = ndimage.gaussian_filter(sal_map1, sigma=(5))
+                image_first_derivative = ndimage.gaussian_filter(sal_map1, sigma=(self.sigma))
 
 
                 sx = ndimage.sobel(image_first_derivative, axis=0, mode='nearest')
@@ -429,63 +443,31 @@ class ImageCache:
         """
         images = self.loaded_images
 
-        if (images.shape[1] == 3):
-            img_mean = images[:,0,:,:].mean()
-            img_std = images[:,0,:,:].std()
-
-            maps_mean = images[:,1,:,:].mean()
-            maps_std = images[:,1,:,:].std()
-
-
-            grad_mean = images[:,2,:,:].mean()
-            grad_std = images[:,2,:,:].std()
+        for i in range(0, images.shape[1]):
+            img_mean = images[:,i,:,:].mean()
+            img_std = images[:,i,:,:].std()
 
 
             for key in self.cache:
-                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
-                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
-
-        if (images.shape[1] == 4):
-
-            img_mean = images[:, 0, :, :].mean()
-            img_std = images[:, 0, :, :].std()
-
-            maps_mean = images[:, 1, :, :].mean()
-            maps_std = images[:, 1, :, :].std()
-
-            grad_mean = images[:, 2, :, :].mean()
-            grad_std = images[:, 2, :, :].std()
-
-            grad2_mean = images[:, 2, :, :].mean()
-            grad2_std = images[:, 2, :, :].std()
-
-            for key in self.cache:
-                self.cache[key][0, :, :] = (self.cache[key][0, :, :] - img_mean) / img_std
-                self.cache[key][1, :, :] = (self.cache[key][1, :, :] - maps_mean) / maps_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad_mean) / grad_std
-                self.cache[key][2, :, :] = (self.cache[key][2, :, :] - grad2_mean) / grad2_std
-
-        if update_stats:
-            self.img_mean = np.float32(img_mean.item())
-            self.img_std = np.float32(img_std.item())
-
-            self.maps_mean = np.float32(maps_mean.item())
-            self.maps_std = np.float32(maps_std.item())
-
-            self.grad_mean = np.float32(grad_mean.item())
-            self.grad_std = np.float32(grad_std.item())
-
-            if (images.shape[1] == 4):
-                self.grad2_mean = np.float32(grad2_mean.item())
-                self.grad2_std = np.float32(grad2_std.item())
+                self.cache[key][i, :, :] = (self.cache[key][i, :, :] - img_mean) / img_std
 
 
+            if update_stats:
+                if i == 0:
+                    self.img_mean = np.float32(img_mean.item())
+                    self.img_std = np.float32(img_std.item())
 
+                if i == 1:
+                    self.maps_mean = np.float32(img_mean.item())
+                    self.maps_std = np.float32(img_std.item())
 
+                if i == 2:
+                    self.grad_mean = np.float32(img_mean.item())
+                    self.grad_std = np.float32(img_std.item())
 
-
-
+                if i == 3:
+                    self.grad2_mean = np.float32(img_mean.item())
+                    self.grad2_std = np.float32(img_std.item())
 
 
 
