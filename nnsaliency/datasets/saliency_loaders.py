@@ -258,7 +258,9 @@ class ImageCache:
 
     def __init__(self, path=None, sal_path=None, subsample=1, crop=0, scale=1, img_mean=None, img_std=None, maps_mean = None, maps_std = None, grad_mean = None, grad_std = None, grad2_mean = None,
                  grad2_std = None,
+
                  transform=True, normalize=True, filename_precision=6, logarithm = True, gradient = False, include_all = False, sigma= 5):
+
 
         """
         path: str - pointing to the directory, where the individual .npy files are present
@@ -451,7 +453,6 @@ class ImageCache:
             for key in self.cache:
                 self.cache[key][i, :, :] = (self.cache[key][i, :, :] - img_mean) / img_std
 
-
             if update_stats:
                 if i == 0:
                     self.img_mean = np.float32(img_mean.item())
@@ -468,8 +469,6 @@ class ImageCache:
                 if i == 3:
                     self.grad2_mean = np.float32(img_mean.item())
                     self.grad2_std = np.float32(img_std.item())
-
-
 
 
 
