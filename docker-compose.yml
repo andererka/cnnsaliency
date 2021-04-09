@@ -12,10 +12,9 @@ x-shared: &common
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DEV_SOURCE=${DEV_SOURCE}
   volumes:
-    - .:/src/nndichromacy
+    - .:/src/nnsaliency
     - ./notebooks:/notebooks
-    - /mnt/scratch07/color_mei:/data
-    - /mnt/scratch07/nexport:/nexport
+
   env_file:
     - .env
 
@@ -23,8 +22,9 @@ services:
   notebook_server:
     <<: *common
     volumes:
-      - .:/src/nnvision
+      - .:/src/nnsaliency
       - ./notebooks:/notebooks
+      - /home:/server_home
       - /var/sinz-shared:/data
     ports:
       - "8888:8888"
@@ -32,7 +32,7 @@ services:
   notebook_gpu_server:
     <<: *common
     volumes:
-      - .:/src/nnvision
+      - .:/src/nnsaliency
       - ./notebooks:/notebooks
       - /var/lib/nova/sinz-shared:/data
     ports:
@@ -51,7 +51,7 @@ services:
       - .env_pipeline
     volumes:
       - ./notebooks:/notebooks
-      - /mnt:/mnt
+
     ports:
       - "8888:8888"
     entrypoint:
@@ -70,7 +70,6 @@ services:
       - .env_pipeline
     volumes:
       - ./notebooks:/notebooks
-      - /mnt:/mnt
     entrypoint:
       - jupyter
       - lab
