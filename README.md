@@ -116,13 +116,13 @@ Using a larger input area of the image, and therefore a smaller cropping on each
 
 When I compared the same cropping sizes, the validation correlations and test correlations of the three different scenarios - Only Images, Images + Saliency, All (Images + Saliency + Gradients) - were quite similar, so that we could not conclude that the saliency maps were contributing any information for the prediction of neural activation. 
 
-![img](media/katharina/cnn_test_corr)
+<img src="media/katharina/cnn_test_corr" style="zoom:80% ">
 
 The same was the case for the other models:
 
-![CNN with Attention Readout: Correlation plot](media/katharina/attention_test_corr)
+<img src="media/katharina/attention_test_corr" style="zoom:80% ">
 
-<img src="media/katharina/remapper_test_corr" alt="CNN with remapper network: Correlation plot" style="zoom: 150%;" />
+<img src="media/katharina/remapper_test_corr" alt="CNN with remapper network: Correlation plot" style="zoom: 80%;" />
 
 
 
@@ -156,7 +156,7 @@ Here I looked at the three neurons with the best overall test correlation and pl
 
 The neuron seems to be 'interested' in fur, hair, dark light intensity pictures. Further, some wire fence patterns occur in several images. 
 
-<img src="media/katharina/example_based_1" alt="img" style="zoom: 200%;" />
+<img src="media/katharina/example_based_1" alt="img" style="zoom: 400%;" />
 
 <u>Result for neuron with second best test correlation</u>:
 
@@ -188,7 +188,7 @@ Here is a scratch of the approach in order to get an intuition:
 
 
 
-<img src="media/katharina/backprop.png" style="zoom:67%;" />
+<img src="media/katharina/backprop.png" style="zoom:40%;" />
 
 #### First look into gradient receptive fields for 4 different neurons
 
