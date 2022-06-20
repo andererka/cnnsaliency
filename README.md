@@ -118,11 +118,9 @@ When I compared the same cropping sizes, the validation correlations and test co
 
 <img src="media/katharina/cnn_test_corr" style="zoom:80% ">
 
-The same was the case for the other models:
+The same was the case for the models with an attention core:
 
 <img src="media/katharina/attention_test_corr" style="zoom:80% ">
-
-<img src="media/katharina/remapper_test_corr" alt="CNN with remapper network: Correlation plot" style="zoom: 80%;" />
 
 
 
