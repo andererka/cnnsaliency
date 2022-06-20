@@ -188,7 +188,7 @@ Here is a scratch of the approach in order to get an intuition:
 
 
 
-<img src="media/katharina/backprop.png" alt="image-20210203152508533" style="zoom:67%;" />
+<img src="media/katharina/backprop.png" style="zoom:67%;" />
 
 #### First look into gradient receptive fields for 4 different neurons
 
@@ -198,15 +198,15 @@ Below you can see some examples that indicate some shifts of the gradient recept
 
 
 
-![image-20210203152508533](media/katharina/gradient_RFs_visu_1.png)
+<img src="media/katharina/gradient_RFs_visu_1.png">
 
 
 
 
 
-Some other examples also indicated that the neurons are interested in curves, textures and object borders.
+Some other examples also indicated that the neurons are interested in curves, textures and object borders:
 
-Here are some other examples if you are interested: [image-example](media/katharina/gradient_RFs_visu_4.png), [image-example2](media/katharina/gradient_RFs_visu_2.png), [image-example3](media/katharina/gradient_RFs_visu_5.png)
+Here are some other examples if you are interested: <img src="media/katharina/gradient_RFs_visu_4.png"> <img src="media/katharina/gradient_RFs_visu_2.png"> <img src="media/katharina/gradient_RFs_visu_5.png">
 
 
 
@@ -220,13 +220,15 @@ The gradient receptive fields can be also plotted with a divergent color-map suc
 
 Here are some of the most impressive gradient receptive fields:
 
-![img](media/katharina/activation_on_top1.png)
+<img src="media/katharina/activation_on_top1.png">
 
-![img](media/katharina/activation_on_top3.png)
+<img src="media/katharina/activation_on_top3.png">
 
 
 
-Here I linked some more examples, if you are interested: [image gradient receptive field 1](media/katharina/activation_on_top2.png), [image gradient receptive field 2](media/katharina/activation_on_top4.png), [image gradient receptive field 3](media/katharina/activation_on_top5.png), [image gradient receptive field 4](media/katharina/activation_on_top6.png)
+Here are some more examples:<img src="media/katharina/activation_on_top2.png">
+
+<img src="media/katharina/activation_on_top4.png"> <img src="media/katharina/activation_on_top5.png"> <img src="media/katharina/activation_on_top6.png">
 
 Before, when we looked at the example-based visualization, we saw that the neuron with the best test correlation was firing most strongly to completely different images compared to the neuron with the second best test correlation, even that they were seeing the exact same images (both neurons belong to the same session id). 
 
@@ -234,13 +236,13 @@ Now, I want to highlight these different 'interests' as I compared their image-d
 
 Here are some examples that were leading to the **strongest activation** for the <u>neuron with the best test correlation:</u>
 
-![img](media/katharina/gRF_leading_to_strongest_response_neuron1.png)
+<img src="media/katharina/gRF_leading_to_strongest_response_neuron1.png">
 
 Here the same for the <u>neuron with the second best test correlation</u>:
 
 
 
-![img](media/katharina/gRF_leading_to_strongest_response_neuron2(1).png)
+<img src="media/katharina/gRF_leading_to_strongest_response_neuron2(1).png">
 
 
 
@@ -250,11 +252,11 @@ Plotting now some examples that were leading to the **weakest activation** for t
 
 <u>Neuron with best test correlation:</u>
 
-![img](media/katharina/gRF_leading_to_weakest_response_neuron1(1).png)
+<img src="media/katharina/gRF_leading_to_weakest_response_neuron1(1).png">
 
 <u>Neuron with second best test correlation:</u>
 
-![img](media/katharina/gRF_leading_to_weakest_response_neuron2(2).png)
+<img src="media/katharina/gRF_leading_to_weakest_response_neuron2(2).png">
 
 
 
@@ -264,7 +266,7 @@ We also got some evidence that the values of the gradient receptive fields have 
 
 <u>Distribution of values for neuron with best test correlation:</u>
 
-![img](media/katharina/dist_vals.png)
+<img src="media/katharina/dist_vals.png">
 
 
 
@@ -300,13 +302,13 @@ Here is one example for the projection - the first plot is a projection with 500
 
 <u>Projection with 500 gRFs</u>:
 
-![img](media/katharina/projection_of_images_with_PCs_of_RFs_500_1.png)
+<img src="media/katharina/projection_of_images_with_PCs_of_RFs_500_1.png">
 
 
 
 <u>Projection with 2000 gRFs:</u>
 
-![img](media/katharina/projection_of_images_with_PCs_of_RFs_2000_1.png)
+<img src="media/katharina/projection_of_images_with_PCs_of_RFs_2000_1.png">
 
 For more examples see here:
 
